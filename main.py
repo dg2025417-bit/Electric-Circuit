@@ -120,7 +120,7 @@ export default function (component) {
   } else {
     W = 940; H = 540;
     const l = 250, t = 110, b = 420, yc = 265, rl = 90;
-    const xs = [420, 590, 760];
+    const xs = data.results.rows.length === 2 ? [460, 720] : [420, 590, 760];
     const last = xs[xs.length - 1];
     wire(l, t, last, t); wire(l, b, last, b);
     wire(l, b, l, yc + 12); wire(l, yc - 12, l, t); battery(l, yc);
@@ -195,7 +195,7 @@ def control(label, unit, lo, hi, step):
 # ------------------------------------------------------------------
 def page_single():
     I_MAX = 5.0
-    st.title("저항 하나의 소비 전력")
+    st.title("직렬연결")
     st.caption("2022 개정 교육과정 물리학 · 전기 회로")
     st.markdown("**회로 그림 안의 슬라이더**로 전압 · 전류 · 저항을 직접 조절해 보세요.  \n"
                 "옴의 법칙 **V = IR** 을 지키도록, 전압이나 전류를 바꾸면 저항은 그대로 두고, "
@@ -250,34 +250,15 @@ def page_single():
         f"P = V²/R = {fmt(V)}² ÷ {fmt(R)} = {fmt(V * V / R)} W"
     )
 
-    g1, g2 = st.columns(2)
-
-    # 그래프 1: 저항이 일정할 때 전압에 따른 전력
+    # 그래프: 저항이 일정할 때 전압에 따른 전력
     vs = [i * 0.25 for i in range(0, 121)]  # 0 ~ 30 V
     fig_v = go.Figure()
     fig_v.add_trace(go.Scatter(x=vs, y=[v * v / R for v in vs], mode="lines", name=f"R = {fmt(R)} Ω"))
     fig_v.add_trace(go.Scatter(x=[V], y=[P], mode="markers", marker=dict(size=12), name="현재 설정"))
     fig_v.update_layout(title="저항이 일정할 때: 전압과 소비 전력 (P = V²/R)",
                         xaxis_title="전압 V (V)", yaxis_title="소비 전력 P (W)", height=420)
-    g1.plotly_chart(fig_v)
-    g1.caption("저항이 같으면 소비 전력은 전압의 제곱에 비례합니다. 전압이 2배가 되면 전력은 4배가 됩니다.")
-
-    # 그래프 2: 전압 일정 vs 전류 일정일 때 저항에 따른 전력
-    rs = [i * 0.5 for i in range(2, 241)]  # 1 ~ 120 Ω
-    fig_r = go.Figure()
-    if V > 0:
-        fig_r.add_trace(go.Scatter(x=rs, y=[V * V / r for r in rs], mode="lines",
-                                   name=f"전압 일정 (V = {fmt(V)} V) : P = V²/R"))
-    if I > 0:
-        fig_r.add_trace(go.Scatter(x=rs, y=[I * I * r for r in rs], mode="lines",
-                                   name=f"전류 일정 (I = {fmt(I)} A) : P = I²R"))
-    fig_r.add_trace(go.Scatter(x=[R], y=[P], mode="markers", marker=dict(size=12), name="현재 설정"))
-    fig_r.update_layout(title="저항에 따른 소비 전력: 전압 일정 vs 전류 일정",
-                        xaxis_title="저항 R (Ω)", yaxis_title="소비 전력 P (W)", height=420,
-                        legend=dict(orientation="h", y=-0.25))
-    g2.plotly_chart(fig_r)
-    g2.caption("전압이 일정하면 저항이 클수록 전력이 작아지고(반비례), "
-               "전류가 일정하면 저항이 클수록 전력이 커집니다(비례).")
+    st.plotly_chart(fig_v)
+    st.caption("저항이 같으면 소비 전력은 전압의 제곱에 비례합니다. 전압이 2배가 되면 전력은 4배가 됩니다.")
 
 
 # ------------------------------------------------------------------
@@ -285,14 +266,14 @@ def page_single():
 # ------------------------------------------------------------------
 def page_parallel():
     I_MAX = 10.0
-    st.title("저항의 병렬연결과 소비 전력")
+    st.title("병렬연결")
     st.caption("2022 개정 교육과정 물리학 · 전기 회로")
     st.markdown("**회로 그림 안의 슬라이더**로 전원 전압 · 전체 전류 · 각 저항을 직접 조절해 보세요.  \n"
                 "옴의 법칙 **V = IR** 을 지키도록, 전압이나 전체 전류를 바꾸면 저항은 그대로 두고, "
                 "저항을 바꾸면 전압은 그대로 두고 나머지 값을 계산합니다.")
 
-    m = st.session_state.setdefault("par_model", {"V": 12.0, "R1": 10.0, "R2": 20.0, "R3": 30.0})
-    names = ["R1", "R2", "R3"]
+    m = st.session_state.setdefault("par_model", {"V": 12.0, "R1": 10.0, "R2": 20.0})
+    names = ["R1", "R2"]
 
     def r_total():
         return 1 / sum(1 / m[k] for k in names)
@@ -347,37 +328,29 @@ def page_parallel():
         "소비 전력 (W)": [fmt(p) for _, _, _, p in rows] + [fmt(P_tot)],
     })
 
-    st.info("병렬연결: 1/R = 1/R₁ + 1/R₂ + 1/R₃ 이고 모든 저항에 걸리는 전압이 같으므로 P = V²/R → "
+    st.info("병렬연결: 1/R = 1/R₁ + 1/R₂ 이고 모든 저항에 걸리는 전압이 같으므로 P = V²/R → "
             "**저항이 작은 저항일수록 소비 전력이 큽니다.** 전력의 비 = 저항의 역수의 비")
 
-    g1, g2 = st.columns(2)
-
-    # 그래프 1: 저항별 소비 전력
-    labels = [f"{k} ({fmt(m[k])} Ω)" for k in names]
-    fig_p = go.Figure(go.Bar(x=labels, y=[p for *_, p in rows],
-                             text=[f"{fmt(p)} W" for *_, p in rows], textposition="outside"))
-    fig_p.update_layout(title="병렬연결에서 저항별 소비 전력",
-                        yaxis_title="소비 전력 P (W)", height=420)
-    g1.plotly_chart(fig_p)
-    g1.caption("각 저항의 소비 전력을 모두 더하면 전체 소비 전력과 같습니다.")
-
-    # 그래프 2: 같은 전압에서 저항에 따른 소비 전력
-    rs = [i * 0.5 for i in range(2, 201)]  # 1 ~ 100 Ω
-    fig_r = go.Figure()
-    fig_r.add_trace(go.Scatter(x=rs, y=[V_tot * V_tot / r for r in rs], mode="lines",
-                               name=f"V = {fmt(V_tot)} V : P = V²/R"))
-    fig_r.add_trace(go.Scatter(x=[r for r, *_ in rows], y=[p for *_, p in rows],
-                               mode="markers+text", marker=dict(size=12),
-                               text=names, textposition="top right", name="각 저항"))
-    fig_r.update_layout(title="병렬연결: 같은 전압에서 저항과 소비 전력",
-                        xaxis_title="저항 R (Ω)", yaxis_title="소비 전력 P (W)", height=420,
-                        legend=dict(orientation="h", y=-0.25))
-    g2.plotly_chart(fig_r)
-    g2.caption("병렬연결에서는 모든 저항에 같은 전압이 걸리므로, 저항이 클수록 소비 전력이 작아집니다(반비례).")
+    # 그래프: 저항이 일정할 때 전압에 따른 전력 (각 저항과 전체)
+    vs = [i * 0.25 for i in range(0, 121)]  # 0 ~ 30 V
+    fig_v = go.Figure()
+    for k in names:
+        fig_v.add_trace(go.Scatter(x=vs, y=[v * v / m[k] for v in vs], mode="lines",
+                                   name=f"{k} = {fmt(m[k])} Ω"))
+    fig_v.add_trace(go.Scatter(x=vs, y=[v * v / R_tot for v in vs], mode="lines",
+                               line=dict(dash="dash"), name=f"전체 (합성 저항 {fmt(R_tot)} Ω)"))
+    fig_v.add_trace(go.Scatter(x=[V_tot] * (len(names) + 1),
+                               y=[p for *_, p in rows] + [P_tot],
+                               mode="markers", marker=dict(size=12), name="현재 설정"))
+    fig_v.update_layout(title="저항이 일정할 때: 전압과 소비 전력 (P = V²/R)",
+                        xaxis_title="전압 V (V)", yaxis_title="소비 전력 P (W)", height=420)
+    st.plotly_chart(fig_v)
+    st.caption("저항이 같으면 소비 전력은 전압의 제곱에 비례합니다. 전압이 2배가 되면 전력은 4배가 됩니다. "
+               "병렬연결에서는 두 저항에 같은 전압이 걸리므로, 저항이 작은 쪽의 곡선이 더 가파릅니다.")
 
 
 pg = st.navigation([
-    st.Page(page_single, title="저항 하나의 소비 전력", url_path="single", default=True),
-    st.Page(page_parallel, title="저항의 병렬연결", url_path="parallel"),
+    st.Page(page_single, title="직렬연결", url_path="series", default=True),
+    st.Page(page_parallel, title="병렬연결", url_path="parallel"),
 ])
 pg.run()
